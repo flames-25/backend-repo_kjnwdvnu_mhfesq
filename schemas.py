@@ -1,48 +1,43 @@
 """
-Database Schemas
+Database Schemas for Onebox Email Aggregator
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to a MongoDB collection (lowercased class name).
 """
-
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 
-# Example schemas (replace with your own):
+class EmailAccount(BaseModel):
+    provider: str = Field(..., description="e.g., gmail, outlook, custom")
+    host: str = Field(..., description="IMAP host")
+    port: int = Field(993, description="IMAP port")
+    username: str = Field(..., description="IMAP username/email")
+    password: str = Field(..., description="IMAP app password")
+    use_ssl: bool = Field(True, description="Use SSL for IMAP")
+    description: Optional[str] = Field(None, description="Label for account")
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class EmailMessage(BaseModel):
+    account_id: str = Field(..., description="Reference to emailaccount _id")
+    message_id: str = Field(..., description="RFC Message-ID")
+    uid: Optional[int] = Field(None, description="IMAP UID")
+    folder: str = Field(..., description="Mailbox folder, e.g., INBOX")
+    subject: Optional[str] = None
+    sender: Optional[str] = None
+    to: Optional[List[str]] = None
+    cc: Optional[List[str]] = None
+    date: Optional[datetime] = None
+    snippet: Optional[str] = None
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    labels: Optional[List[str]] = None
+    ai_category: Optional[str] = Field(None, description="Interested | Meeting Booked | Not Interested | Spam | Out of Office")
+    raw_headers: Optional[Dict[str, Any]] = None
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class AgendaDoc(BaseModel):
+    title: str
+    content: str
+    tags: Optional[List[str]] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class InterestedEvent(BaseModel):
+    email_id: str
+    webhook_url: Optional[str] = None
